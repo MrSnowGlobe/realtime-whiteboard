@@ -14,9 +14,29 @@ export class WhiteboardDurableObject {
       lastModified: Date.now()
     };
     this.cursors = new Map(); // userId -> cursor position
+    this.initialized = false; // Track if state has been loaded
+  }
+
+  /**
+   * Initialize and load persisted state
+   */
+  async initialize() {
+    if (this.initialized) return;
+
+    // Load persisted canvas state
+    const savedState = await this.state.storage.get('canvasState');
+    if (savedState) {
+      this.canvasState = savedState;
+      console.log('Loaded persisted canvas state with', savedState.elements?.length || 0, 'elements');
+    }
+
+    this.initialized = true;
   }
 
   async fetch(request) {
+    // Ensure state is loaded before handling any requests
+    await this.initialize();
+
     const url = new URL(request.url);
 
     // Handle WebSocket upgrade
@@ -147,8 +167,8 @@ export class WhiteboardDurableObject {
           data: { element }
         });
 
-        // Trigger auto-save (using alarm API)
-        await this.scheduleAutoSave();
+        // Save state immediately to ensure persistence
+        await this.saveState();
         break;
 
       case MESSAGE_TYPES.DELETE_ELEMENT:
@@ -166,7 +186,8 @@ export class WhiteboardDurableObject {
           }
         });
 
-        await this.scheduleAutoSave();
+        // Save state immediately to ensure persistence
+        await this.saveState();
         break;
 
       case MESSAGE_TYPES.CURSOR_MOVE:
@@ -253,11 +274,7 @@ export class WhiteboardDurableObject {
    * Handle HTTP request for getting state
    */
   async handleGetState() {
-    const savedState = await this.state.storage.get('canvasState');
-    if (savedState) {
-      this.canvasState = savedState;
-    }
-
+    // State is already loaded by initialize(), just return it
     return new Response(JSON.stringify(this.canvasState), {
       headers: { 'Content-Type': 'application/json' }
     });
