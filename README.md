@@ -2,6 +2,12 @@
 
 A real-time collaborative whiteboard application powered by Cloudflare Workers, Durable Objects, and Fabric.js.
 
+## Quick Links
+
+- 📖 [Deployment Guide](DEPLOYMENT.md) - Complete deployment instructions including GitHub Actions
+- 🚀 [Quick Start](#setup-instructions) - Get started in 5 minutes
+- 🎨 [Usage Guide](#usage-guide) - Learn how to use all features
+
 ## Features
 
 ### Drawing Tools
@@ -118,6 +124,8 @@ Open your browser to `http://localhost:8787`
 
 ### 6. Deployment
 
+#### Quick Deploy
+
 Deploy to Cloudflare Workers:
 
 ```bash
@@ -126,6 +134,16 @@ npm run deploy
 
 After deployment, your whiteboard will be available at:
 `https://realtime-whiteboard.<your-subdomain>.workers.dev`
+
+#### Automated Deployment with GitHub Actions
+
+For automated deployments on every push, see the complete [Deployment Guide](DEPLOYMENT.md) which includes:
+
+- GitHub Actions setup for automatic deployments
+- Preview deployments for pull requests
+- Custom domain configuration
+- Environment management
+- Monitoring and troubleshooting
 
 ## Usage Guide
 
