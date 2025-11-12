@@ -40,8 +40,20 @@ export default {
         return handleImageRequest(imageId, env, corsHeaders);
       }
 
-      // Serve static assets for board URLs and root
+      // Serve static assets for board URLs
       if (url.pathname.startsWith('/board/')) {
+        const pathParts = url.pathname.split('/');
+        // /board/constants.js -> serve /constants.js
+        // /board/app.js -> serve /app.js
+        // /board/styles.css -> serve /styles.css
+        if (pathParts.length === 3 && pathParts[2] && (
+          pathParts[2].endsWith('.js') ||
+          pathParts[2].endsWith('.css') ||
+          pathParts[2].endsWith('.html')
+        )) {
+          return serveStaticAsset('/' + pathParts[2], corsHeaders);
+        }
+        // /board/sessionId -> serve index.html
         return serveStaticAsset('/', corsHeaders);
       }
 
