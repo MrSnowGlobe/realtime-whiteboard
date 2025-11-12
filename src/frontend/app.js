@@ -329,9 +329,12 @@ class WhiteboardApp {
         });
 
         // Night mode toggle
-        document.getElementById('night-mode-btn').addEventListener('click', () => {
-            this.toggleNightMode();
-        });
+        const nightModeBtn = document.getElementById('night-mode-btn');
+        if (nightModeBtn) {
+            nightModeBtn.addEventListener('click', () => {
+                this.toggleNightMode();
+            });
+        }
 
         // Load saved night mode preference
         this.loadNightMode();
