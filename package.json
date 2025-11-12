@@ -17,9 +17,6 @@
   ],
   "author": "",
   "license": "MIT",
-  "dependencies": {
-    "@cloudflare/kv-asset-handler": "^0.3.0"
-  },
   "devDependencies": {
     "wrangler": "^3.0.0"
   }

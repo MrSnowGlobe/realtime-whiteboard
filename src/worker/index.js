@@ -1,5 +1,5 @@
 import { WhiteboardDurableObject } from './websocket.js';
-import { getAssetFromKV } from '@cloudflare/kv-asset-handler';
+import { serveAsset } from './assets.js';
 
 /**
  * Main Worker entry point
@@ -41,12 +41,12 @@ export default {
       }
 
       // Serve static assets for board URLs and root
-      if (url.pathname.startsWith('/board/') || url.pathname === '/') {
-        return getAsset(request, env, ctx, corsHeaders, 'index.html');
+      if (url.pathname.startsWith('/board/')) {
+        return serveStaticAsset('/', corsHeaders);
       }
 
       // Serve other static assets
-      return getAsset(request, env, ctx, corsHeaders);
+      return serveStaticAsset(url.pathname, corsHeaders);
 
     } catch (error) {
       console.error('Error handling request:', error);
@@ -195,32 +195,14 @@ async function handleImageRequest(imageKey, env, corsHeaders) {
 }
 
 /**
- * Get static asset from Workers Sites using KV Asset Handler
+ * Serve static assets with CORS headers
  */
-async function getAsset(request, env, ctx, corsHeaders, overridePath) {
-  try {
-    // If override path is provided (e.g., 'index.html' for /board/ routes)
-    if (overridePath) {
-      const url = new URL(request.url);
-      request = new Request(
-        `${url.protocol}//${url.host}/${overridePath}`,
-        request
-      );
-    }
+async function serveStaticAsset(pathname, corsHeaders) {
+  // Try to serve the requested asset
+  const response = await serveAsset(pathname);
 
-    // Get asset from KV using Workers Sites
-    const response = await getAssetFromKV(
-      {
-        request,
-        waitUntil: ctx.waitUntil.bind(ctx),
-      },
-      {
-        ASSET_NAMESPACE: env.__STATIC_CONTENT,
-        ASSET_MANIFEST: env.__STATIC_CONTENT_MANIFEST,
-      }
-    );
-
-    // Add CORS headers to response
+  if (response) {
+    // Add CORS headers to the response
     const headers = new Headers(response.headers);
     Object.entries(corsHeaders).forEach(([key, value]) => {
       headers.set(key, value);
@@ -231,23 +213,18 @@ async function getAsset(request, env, ctx, corsHeaders, overridePath) {
       statusText: response.statusText,
       headers,
     });
-  } catch (error) {
-    console.error('Error serving asset:', error);
-
-    // If asset not found, try to serve index.html (for SPA routing)
-    if (!overridePath) {
-      try {
-        return getAsset(request, env, ctx, corsHeaders, 'index.html');
-      } catch (fallbackError) {
-        console.error('Error serving fallback index.html:', fallbackError);
-      }
-    }
-
-    return new Response('Not found', {
-      status: 404,
-      headers: corsHeaders
-    });
   }
+
+  // If asset not found, serve index.html (for SPA routing)
+  if (pathname !== '/' && pathname !== '/index.html') {
+    return serveStaticAsset('/', corsHeaders);
+  }
+
+  // Return 404 if even index.html couldn't be served
+  return new Response('Not found', {
+    status: 404,
+    headers: corsHeaders
+  });
 }
 
 // Export Durable Object class

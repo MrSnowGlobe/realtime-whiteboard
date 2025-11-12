@@ -26,14 +26,15 @@ id = "c83d5dc3a6f440a3af93426c7374c192"
 binding = "IMAGES_BUCKET"
 bucket_name = "whiteboard-images"
 
-# Workers Sites configuration for static assets
-[site]
-bucket = "./src/frontend"
-
-# Build configuration
+# Rules for importing static assets as text
 [build]
 command = ""
 watch_dirs = ["src"]
+
+[[rules]]
+type = "Text"
+globs = ["**/*.html", "**/*.css", "**/*.js"]
+fallthrough = true
 
 # Environment variables (add your own as needed)
 [vars]
