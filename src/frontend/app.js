@@ -328,6 +328,14 @@ class WhiteboardApp {
             }
         });
 
+        // Night mode toggle
+        document.getElementById('night-mode-btn').addEventListener('click', () => {
+            this.toggleNightMode();
+        });
+
+        // Load saved night mode preference
+        this.loadNightMode();
+
         // Share button
         document.getElementById('share-btn').addEventListener('click', () => {
             this.showShareModal();
@@ -460,9 +468,21 @@ class WhiteboardApp {
      */
     updateDrawingSettings() {
         if (this.canvas.freeDrawingBrush) {
-            this.canvas.freeDrawingBrush.color = this.currentColor;
+            // Convert hex color to RGBA with opacity
+            const color = this.hexToRgba(this.currentColor, this.currentOpacity);
+            this.canvas.freeDrawingBrush.color = color;
             this.canvas.freeDrawingBrush.width = this.currentStrokeWidth;
         }
+    }
+
+    /**
+     * Convert hex color to RGBA with opacity
+     */
+    hexToRgba(hex, opacity) {
+        const r = parseInt(hex.slice(1, 3), 16);
+        const g = parseInt(hex.slice(3, 5), 16);
+        const b = parseInt(hex.slice(5, 7), 16);
+        return `rgba(${r}, ${g}, ${b}, ${opacity})`;
     }
 
     /**
@@ -848,6 +868,25 @@ class WhiteboardApp {
 
         urlInput.value = `${window.location.origin}/board/${this.sessionId}`;
         modal.style.display = 'flex';
+    }
+
+    /**
+     * Toggle night mode
+     */
+    toggleNightMode() {
+        document.body.classList.toggle('night-mode');
+        const isNightMode = document.body.classList.contains('night-mode');
+        localStorage.setItem('nightMode', isNightMode);
+    }
+
+    /**
+     * Load saved night mode preference
+     */
+    loadNightMode() {
+        const isNightMode = localStorage.getItem('nightMode') === 'true';
+        if (isNightMode) {
+            document.body.classList.add('night-mode');
+        }
     }
 }
 

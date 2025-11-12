@@ -424,3 +424,128 @@ input:focus {
 * {
     transition: background-color 0.2s, border-color 0.2s;
 }
+
+/* Night Mode / Dark Theme */
+body.night-mode {
+    background: #1a1a1a;
+}
+
+body.night-mode #app {
+    background: #1a1a1a;
+}
+
+body.night-mode #toolbar {
+    background: #2d2d2d;
+    border-bottom-color: #404040;
+}
+
+body.night-mode .logo {
+    color: #e0e0e0;
+}
+
+body.night-mode .tools {
+    background: #3a3a3a;
+}
+
+body.night-mode .tool-btn {
+    color: #b0b0b0;
+}
+
+body.night-mode .tool-btn:hover {
+    background: #4a4a4a;
+    color: #ffffff;
+}
+
+body.night-mode .tool-btn.active {
+    background: #4a90e2;
+    color: #ffffff;
+}
+
+body.night-mode label {
+    color: #b0b0b0;
+}
+
+body.night-mode #stroke-width-value,
+body.night-mode #opacity-value {
+    color: #e0e0e0;
+}
+
+body.night-mode .users-indicator {
+    background: #3a3a3a;
+    color: #b0b0b0;
+}
+
+body.night-mode #canvas-container {
+    background: #252525;
+}
+
+body.night-mode .panel {
+    background: #2d2d2d;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.5);
+}
+
+body.night-mode .panel h3 {
+    color: #e0e0e0;
+}
+
+body.night-mode .user-item {
+    background: #3a3a3a;
+}
+
+body.night-mode .user-name {
+    color: #e0e0e0;
+}
+
+body.night-mode .loading-overlay {
+    background: rgba(26, 26, 26, 0.95);
+}
+
+body.night-mode .loading-overlay p {
+    color: #b0b0b0;
+}
+
+body.night-mode .modal {
+    background: rgba(0, 0, 0, 0.8);
+}
+
+body.night-mode .modal-content {
+    background: #2d2d2d;
+}
+
+body.night-mode .modal-content h2 {
+    color: #e0e0e0;
+}
+
+body.night-mode .modal-content p {
+    color: #b0b0b0;
+}
+
+body.night-mode .close {
+    color: #888;
+}
+
+body.night-mode .close:hover {
+    color: #e0e0e0;
+}
+
+body.night-mode #share-url {
+    background: #3a3a3a;
+    border-color: #505050;
+    color: #e0e0e0;
+}
+
+body.night-mode .hint {
+    color: #888;
+}
+
+body.night-mode input[type="range"] {
+    background: #505050;
+}
+
+body.night-mode #color-picker {
+    border-color: #505050;
+}
+
+body.night-mode .color-swatch {
+    border-color: #505050;
+}
