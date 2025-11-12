@@ -533,10 +533,28 @@ class WhiteboardApp {
                 body: formData
             });
 
+            if (!response.ok) {
+                throw new Error(`Upload failed: ${response.status} ${response.statusText}`);
+            }
+
             const data = await response.json();
+
+            if (data.error) {
+                console.error('Upload error:', data.error);
+                alert(`Failed to upload image: ${data.error}`);
+                return;
+            }
 
             if (data.url) {
                 this.addImageToCanvas(data.url);
+                // Clear the input so the same file can be uploaded again
+                const imageInput = document.getElementById('image-input');
+                if (imageInput) {
+                    imageInput.value = '';
+                }
+            } else {
+                console.error('No URL returned from upload:', data);
+                alert('Failed to upload image. No URL returned.');
             }
         } catch (error) {
             console.error('Error uploading image:', error);
@@ -548,7 +566,16 @@ class WhiteboardApp {
      * Add image to canvas
      */
     addImageToCanvas(url) {
-        fabric.Image.fromURL(url, (img) => {
+        // Convert relative URL to absolute URL
+        const absoluteUrl = new URL(url, window.location.origin).href;
+
+        fabric.Image.fromURL(absoluteUrl, (img) => {
+            if (!img || !img.width || !img.height) {
+                console.error('Failed to load image:', absoluteUrl);
+                alert('Failed to load image. Please try again.');
+                return;
+            }
+
             // Scale image if too large
             const maxWidth = 500;
             const maxHeight = 500;
@@ -565,7 +592,7 @@ class WhiteboardApp {
 
             this.canvas.add(img);
             this.sendCanvasElement(img);
-        });
+        }, { crossOrigin: 'anonymous' });
     }
 
     /**
