@@ -1,0 +1,39 @@
+name = "realtime-whiteboard"
+main = "src/worker/index.js"
+compatibility_date = "2024-01-01"
+
+# Durable Objects bindings
+[durable_objects]
+bindings = [
+  { name = "WHITEBOARD_DO", class_name = "WhiteboardDurableObject" }
+]
+
+# Enable Durable Objects migrations
+[[migrations]]
+tag = "v1"
+new_classes = ["WhiteboardDurableObject"]
+
+# KV namespace for session metadata
+[[kv_namespaces]]
+binding = "SESSIONS_KV"
+id = "preview_id"
+
+# R2 bucket for image storage
+[[r2_buckets]]
+binding = "IMAGES_BUCKET"
+bucket_name = "whiteboard-images"
+
+# Workers Sites configuration for static assets
+[site]
+bucket = "./src/frontend"
+
+# Build configuration
+[build]
+command = ""
+watch_dirs = ["src"]
+
+# Environment variables (add your own as needed)
+[vars]
+ENVIRONMENT = "development"
+MAX_IMAGE_SIZE_MB = "10"
+AUTO_SAVE_INTERVAL_MS = "30000"
