@@ -15,6 +15,9 @@ export class WhiteboardDurableObject {
     };
     this.cursors = new Map(); // userId -> cursor position
     this.initialized = false; // Track if state has been loaded
+    this.pendingSave = false; // Track if save is pending
+    this.saveTimeout = null; // Debounce timer
+    this.unsavedChanges = 0; // Count of unsaved changes
   }
 
   /**
@@ -111,7 +114,7 @@ export class WhiteboardDurableObject {
     });
 
     // Handle disconnection
-    server.addEventListener('close', () => {
+    server.addEventListener('close', async () => {
       this.sessions.delete(userId);
       this.users.delete(userId);
       this.cursors.delete(userId);
@@ -120,13 +123,23 @@ export class WhiteboardDurableObject {
         type: MESSAGE_TYPES.USER_LEFT,
         data: { userId }
       });
+
+      // Save any pending changes when user disconnects
+      if (this.unsavedChanges > 0) {
+        await this.performBatchedSave();
+      }
     });
 
-    server.addEventListener('error', (error) => {
+    server.addEventListener('error', async (error) => {
       console.error('WebSocket error:', error);
       this.sessions.delete(userId);
       this.users.delete(userId);
       this.cursors.delete(userId);
+
+      // Save any pending changes on error
+      if (this.unsavedChanges > 0) {
+        await this.performBatchedSave();
+      }
     });
 
     return new Response(null, { status: 101, webSocket: client });
@@ -167,8 +180,8 @@ export class WhiteboardDurableObject {
           data: { element }
         });
 
-        // Save state immediately to ensure persistence
-        await this.saveState();
+        // Use batched save strategy
+        this.scheduleBatchedSave();
         break;
 
       case MESSAGE_TYPES.DELETE_ELEMENT:
@@ -186,8 +199,8 @@ export class WhiteboardDurableObject {
           }
         });
 
-        // Save state immediately to ensure persistence
-        await this.saveState();
+        // Use batched save strategy
+        this.scheduleBatchedSave();
         break;
 
       case MESSAGE_TYPES.CURSOR_MOVE:
@@ -242,7 +255,52 @@ export class WhiteboardDurableObject {
   }
 
   /**
-   * Schedule auto-save using Durable Object alarm
+   * Schedule batched save with debouncing
+   * Saves after 2 seconds of inactivity OR after 50 changes, whichever comes first
+   */
+  scheduleBatchedSave() {
+    this.unsavedChanges++;
+
+    // Save immediately if we have many unsaved changes
+    const BATCH_THRESHOLD = 50;
+    if (this.unsavedChanges >= BATCH_THRESHOLD) {
+      this.performBatchedSave();
+      return;
+    }
+
+    // Clear existing timeout
+    if (this.saveTimeout) {
+      clearTimeout(this.saveTimeout);
+    }
+
+    // Schedule save after 2 seconds of inactivity
+    this.saveTimeout = setTimeout(() => {
+      this.performBatchedSave();
+    }, 2000);
+  }
+
+  /**
+   * Perform the actual batched save
+   */
+  async performBatchedSave() {
+    if (this.unsavedChanges === 0) return;
+
+    const changesToSave = this.unsavedChanges;
+    this.unsavedChanges = 0;
+    this.saveTimeout = null;
+
+    try {
+      await this.state.storage.put('canvasState', this.canvasState);
+      console.log(`Canvas state saved (${changesToSave} changes batched)`);
+    } catch (error) {
+      console.error('Error saving canvas state:', error);
+      // Restore unsaved changes count on error
+      this.unsavedChanges += changesToSave;
+    }
+  }
+
+  /**
+   * Schedule auto-save using Durable Object alarm as backup
    */
   async scheduleAutoSave() {
     const currentAlarm = await this.state.storage.getAlarm();
@@ -252,18 +310,22 @@ export class WhiteboardDurableObject {
   }
 
   /**
-   * Alarm handler for auto-save
+   * Alarm handler for auto-save backup
    */
   async alarm() {
-    await this.saveState();
+    // Save any remaining unsaved changes
+    if (this.unsavedChanges > 0) {
+      await this.performBatchedSave();
+    }
   }
 
   /**
-   * Save canvas state to storage
+   * Save canvas state to storage (for manual saves)
    */
   async saveState() {
     try {
       await this.state.storage.put('canvasState', this.canvasState);
+      this.unsavedChanges = 0;
       console.log('Canvas state saved successfully');
     } catch (error) {
       console.error('Error saving canvas state:', error);
