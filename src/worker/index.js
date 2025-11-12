@@ -1,4 +1,5 @@
 import { WhiteboardDurableObject } from './websocket.js';
+import { getAssetFromKV } from '@cloudflare/kv-asset-handler';
 
 /**
  * Main Worker entry point
@@ -20,7 +21,7 @@ export default {
     }
 
     try {
-      // Route handling
+      // API Route handling
       if (url.pathname === '/api/session/create') {
         return handleCreateSession(env, corsHeaders);
       }
@@ -39,13 +40,13 @@ export default {
         return handleImageRequest(imageId, env, corsHeaders);
       }
 
-      if (url.pathname.startsWith('/board/')) {
-        // Serve the frontend for board URLs
-        return getAsset(env, 'index.html', corsHeaders);
+      // Serve static assets for board URLs and root
+      if (url.pathname.startsWith('/board/') || url.pathname === '/') {
+        return getAsset(request, env, ctx, corsHeaders, 'index.html');
       }
 
-      // Serve static assets
-      return getAsset(env, url.pathname === '/' ? 'index.html' : url.pathname, corsHeaders);
+      // Serve other static assets
+      return getAsset(request, env, ctx, corsHeaders);
 
     } catch (error) {
       console.error('Error handling request:', error);
@@ -194,16 +195,54 @@ async function handleImageRequest(imageKey, env, corsHeaders) {
 }
 
 /**
- * Get static asset from Workers Site
+ * Get static asset from Workers Sites using KV Asset Handler
  */
-async function getAsset(env, path, corsHeaders) {
+async function getAsset(request, env, ctx, corsHeaders, overridePath) {
   try {
-    // This will be handled by Workers Sites automatically
-    // For now, return a basic response pointing to the file
-    return new Response('Static assets will be served by Workers Sites', {
-      headers: { ...corsHeaders, 'Content-Type': 'text/plain' }
+    // If override path is provided (e.g., 'index.html' for /board/ routes)
+    if (overridePath) {
+      const url = new URL(request.url);
+      request = new Request(
+        `${url.protocol}//${url.host}/${overridePath}`,
+        request
+      );
+    }
+
+    // Get asset from KV using Workers Sites
+    const response = await getAssetFromKV(
+      {
+        request,
+        waitUntil: ctx.waitUntil.bind(ctx),
+      },
+      {
+        ASSET_NAMESPACE: env.__STATIC_CONTENT,
+        ASSET_MANIFEST: env.__STATIC_CONTENT_MANIFEST,
+      }
+    );
+
+    // Add CORS headers to response
+    const headers = new Headers(response.headers);
+    Object.entries(corsHeaders).forEach(([key, value]) => {
+      headers.set(key, value);
+    });
+
+    return new Response(response.body, {
+      status: response.status,
+      statusText: response.statusText,
+      headers,
     });
   } catch (error) {
+    console.error('Error serving asset:', error);
+
+    // If asset not found, try to serve index.html (for SPA routing)
+    if (!overridePath) {
+      try {
+        return getAsset(request, env, ctx, corsHeaders, 'index.html');
+      } catch (fallbackError) {
+        console.error('Error serving fallback index.html:', fallbackError);
+      }
+    }
+
     return new Response('Not found', {
       status: 404,
       headers: corsHeaders
