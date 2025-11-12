@@ -667,6 +667,24 @@ class WhiteboardApp {
                 this.updateCursor(data.userId, data.cursor);
                 break;
 
+            case MESSAGE_TYPES.USER_NAME_CHANGED:
+                // Update user name
+                if (data.userId === this.userId) {
+                    // Update current user
+                    this.currentUser.name = data.name;
+                } else {
+                    // Update other user
+                    const user = this.users.get(data.userId);
+                    if (user) {
+                        user.name = data.name;
+                        this.users.set(data.userId, user);
+                    }
+                }
+                this.updateUsersUI();
+                // Update cursor label if exists
+                this.updateCursorLabel(data.userId, data.name);
+                break;
+
             case MESSAGE_TYPES.ERROR:
                 console.error('Server error:', data.message);
                 break;
@@ -842,12 +860,49 @@ class WhiteboardApp {
         colorDiv.className = 'user-color';
         colorDiv.style.backgroundColor = user.color;
 
-        const nameSpan = document.createElement('span');
-        nameSpan.className = 'user-name';
-        nameSpan.textContent = user.name + (isCurrent ? ' (You)' : '');
+        if (isCurrent) {
+            // Make name editable for current user
+            const nameInput = document.createElement('input');
+            nameInput.type = 'text';
+            nameInput.className = 'user-name-input';
+            nameInput.value = user.name;
+            nameInput.maxLength = 50;
+            nameInput.placeholder = 'Your name';
+            nameInput.title = 'Click to edit your name';
 
-        div.appendChild(colorDiv);
-        div.appendChild(nameSpan);
+            // Handle name change on blur
+            nameInput.addEventListener('blur', () => {
+                const newName = nameInput.value.trim();
+                if (newName && newName !== user.name) {
+                    this.changeName(newName);
+                } else {
+                    nameInput.value = user.name; // Reset if empty
+                }
+            });
+
+            // Handle Enter key
+            nameInput.addEventListener('keydown', (e) => {
+                if (e.key === 'Enter') {
+                    nameInput.blur();
+                }
+            });
+
+            const youLabel = document.createElement('span');
+            youLabel.className = 'you-label';
+            youLabel.textContent = ' (You)';
+
+            div.appendChild(colorDiv);
+            div.appendChild(nameInput);
+            div.appendChild(youLabel);
+        } else {
+            // Non-editable for other users
+            const nameSpan = document.createElement('span');
+            nameSpan.className = 'user-name';
+            nameSpan.textContent = user.name;
+
+            div.appendChild(colorDiv);
+            div.appendChild(nameSpan);
+        }
 
         return div;
     }
@@ -886,6 +941,38 @@ class WhiteboardApp {
         if (cursorEl) {
             cursorEl.remove();
             this.cursors.delete(userId);
+        }
+    }
+
+    /**
+     * Update cursor label with new name
+     */
+    updateCursorLabel(userId, newName) {
+        const cursorEl = this.cursors.get(userId);
+        if (cursorEl) {
+            const labelEl = cursorEl.querySelector('.cursor-label');
+            if (labelEl) {
+                labelEl.textContent = newName;
+            }
+        }
+    }
+
+    /**
+     * Change current user's name
+     */
+    changeName(newName) {
+        if (!newName || newName.trim().length === 0) {
+            return;
+        }
+
+        const trimmedName = newName.trim().substring(0, 50);
+
+        // Send name change to server
+        if (this.ws && this.ws.readyState === WebSocket.OPEN) {
+            this.ws.send(JSON.stringify({
+                type: MESSAGE_TYPES.CHANGE_NAME,
+                data: { name: trimmedName }
+            }));
         }
     }
 

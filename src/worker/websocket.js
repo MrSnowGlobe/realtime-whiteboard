@@ -180,6 +180,22 @@ export class WhiteboardDurableObject {
         }, userId);
         break;
 
+      case MESSAGE_TYPES.CHANGE_NAME:
+        // Update user's name
+        const user = this.users.get(userId);
+        if (user && data.name && data.name.trim().length > 0) {
+          const newName = data.name.trim().substring(0, 50); // Limit to 50 characters
+          user.name = newName;
+          this.users.set(userId, user);
+
+          // Broadcast name change to all clients (including sender)
+          this.broadcast({
+            type: MESSAGE_TYPES.USER_NAME_CHANGED,
+            data: { userId, name: newName }
+          });
+        }
+        break;
+
       default:
         console.warn('Unknown message type:', type);
     }

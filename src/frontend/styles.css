@@ -285,6 +285,34 @@ label {
     color: #333;
 }
 
+.user-name-input {
+    font-size: 14px;
+    color: #333;
+    background: transparent;
+    border: none;
+    border-bottom: 1px solid transparent;
+    padding: 2px 4px;
+    outline: none;
+    flex: 1;
+    min-width: 0;
+    transition: border-color 0.2s;
+}
+
+.user-name-input:hover {
+    border-bottom-color: #ccc;
+}
+
+.user-name-input:focus {
+    border-bottom-color: #4a90e2;
+    background: rgba(74, 144, 226, 0.05);
+}
+
+.you-label {
+    font-size: 12px;
+    color: #888;
+    font-style: italic;
+}
+
 /* Loading Overlay */
 .loading-overlay {
     position: fixed;
@@ -494,6 +522,23 @@ body.night-mode .user-item {
 
 body.night-mode .user-name {
     color: #e0e0e0;
+}
+
+body.night-mode .user-name-input {
+    color: #e0e0e0;
+}
+
+body.night-mode .user-name-input:hover {
+    border-bottom-color: #666;
+}
+
+body.night-mode .user-name-input:focus {
+    border-bottom-color: #4a90e2;
+    background: rgba(74, 144, 226, 0.15);
+}
+
+body.night-mode .you-label {
+    color: #888;
 }
 
 body.night-mode .loading-overlay {

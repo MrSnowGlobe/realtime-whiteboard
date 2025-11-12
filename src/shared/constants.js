@@ -9,11 +9,13 @@ export const MESSAGE_TYPES = {
   DELETE_ELEMENT: 'delete_element',
   UPDATE_ELEMENT: 'update_element',
   CURSOR_MOVE: 'cursor_move',
+  CHANGE_NAME: 'change_name',
 
   // Server -> Client
   INIT: 'init',
   USER_JOINED: 'user_joined',
   USER_LEFT: 'user_left',
+  USER_NAME_CHANGED: 'user_name_changed',
   CANVAS_UPDATE: 'canvas_update',
   CURSOR_UPDATE: 'cursor_update',
   ERROR: 'error'
