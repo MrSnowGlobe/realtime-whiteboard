@@ -4,6 +4,7 @@ A real-time collaborative whiteboard application powered by Cloudflare Workers, 
 
 ## Quick Links
 
+- ⚡ **[Quick Setup](SETUP-QUICK.md)** - **START HERE!** Required setup before first deployment
 - 📖 [Deployment Guide](DEPLOYMENT.md) - Complete deployment instructions including GitHub Actions
 - 🚀 [Quick Start](#setup-instructions) - Get started in 5 minutes
 - 🎨 [Usage Guide](#usage-guide) - Learn how to use all features
@@ -92,25 +93,20 @@ npm install
 
 ### 4. Configure KV and R2
 
-Create KV namespace for session storage:
+**IMPORTANT**: Before deploying, you MUST set up Cloudflare resources.
+
+**Use the automated setup script** (recommended):
 
 ```bash
-wrangler kv:namespace create "SESSIONS_KV"
+./setup-cloudflare.sh
 ```
 
-Copy the `id` from the output and update `wrangler.toml`:
+**Or follow the manual steps** in [SETUP-QUICK.md](SETUP-QUICK.md)
 
-```toml
-[[kv_namespaces]]
-binding = "SESSIONS_KV"
-id = "YOUR_KV_ID_HERE"
-```
-
-Create R2 bucket for image storage:
-
-```bash
-wrangler r2 bucket create whiteboard-images
-```
+This will create:
+- KV namespace for session storage
+- R2 bucket for image storage
+- Update `wrangler.toml` with correct IDs
 
 ### 5. Development
 

@@ -11,14 +11,21 @@ Quick guide to set up automated deployments with GitHub Actions.
 
 ## 📋 Prerequisites
 
-Before setting up GitHub Actions, you need:
+**CRITICAL**: Before setting up GitHub Actions, you MUST complete the Cloudflare setup first!
 
-1. Cloudflare account
-2. Cloudflare Workers enabled
-3. KV namespace created
-4. R2 bucket created
+### ⚠️ Complete These First
 
-If you haven't done these yet, see [DEPLOYMENT.md](../DEPLOYMENT.md) for full setup instructions.
+1. **Cloudflare Resources Setup** - Follow [SETUP-QUICK.md](../SETUP-QUICK.md)
+   - Create KV namespace
+   - Create R2 bucket
+   - Update `wrangler.toml`
+
+2. **Verify Setup Works**
+   ```bash
+   npm run deploy  # Test manual deployment first
+   ```
+
+If manual deployment works, then proceed with GitHub Actions setup below.
 
 ## ⚡ Quick Setup (5 minutes)
 
