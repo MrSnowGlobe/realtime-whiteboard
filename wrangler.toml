@@ -26,15 +26,10 @@ id = "c83d5dc3a6f440a3af93426c7374c192"
 binding = "IMAGES_BUCKET"
 bucket_name = "whiteboard-images"
 
-# Rules for importing static assets as text
+# Build configuration
 [build]
-command = ""
+command = "node build-assets.js"
 watch_dirs = ["src"]
-
-[[rules]]
-type = "Text"
-globs = ["**/*.html", "**/*.css", "**/*.js"]
-fallthrough = true
 
 # Environment variables (add your own as needed)
 [vars]

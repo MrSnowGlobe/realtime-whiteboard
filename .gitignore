@@ -16,6 +16,7 @@ yarn.lock
 # Build output
 dist/
 build/
+src/worker/assets.js
 
 # Logs
 *.log
