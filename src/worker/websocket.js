@@ -18,6 +18,8 @@ export class WhiteboardDurableObject {
     this.pendingSave = false; // Track if save is pending
     this.saveTimeout = null; // Debounce timer
     this.unsavedChanges = 0; // Count of unsaved changes
+    this.auditLog = []; // Audit log for tracking changes
+    this.maxAuditLogSize = 500; // Keep last 500 events
   }
 
   /**
@@ -31,6 +33,13 @@ export class WhiteboardDurableObject {
     if (savedState) {
       this.canvasState = savedState;
       console.log('Loaded persisted canvas state with', savedState.elements?.length || 0, 'elements');
+    }
+
+    // Load persisted audit log
+    const savedAuditLog = await this.state.storage.get('auditLog');
+    if (savedAuditLog) {
+      this.auditLog = savedAuditLog;
+      console.log('Loaded audit log with', savedAuditLog.length, 'events');
     }
 
     this.initialized = true;
@@ -53,6 +62,8 @@ export class WhiteboardDurableObject {
         return this.handleGetState();
       case '/save':
         return this.handleSaveState(request);
+      case '/audit-log':
+        return this.handleGetAuditLog(request);
       default:
         return new Response('Not found', { status: 404 });
     }
@@ -180,6 +191,13 @@ export class WhiteboardDurableObject {
           data: { element }
         });
 
+        // Log audit event
+        const actionType = existingIndex >= 0 ? 'update' : 'create';
+        this.logAuditEvent(userId, actionType, {
+          elementId: element.id,
+          elementType: type
+        });
+
         // Use batched save strategy
         this.scheduleBatchedSave();
         break;
@@ -197,6 +215,11 @@ export class WhiteboardDurableObject {
             deleted: true,
             elementId: data.elementId
           }
+        });
+
+        // Log audit event
+        this.logAuditEvent(userId, 'delete', {
+          elementId: data.elementId
         });
 
         // Use batched save strategy
@@ -218,6 +241,7 @@ export class WhiteboardDurableObject {
         // Update user's name
         const user = this.users.get(userId);
         if (user && data.name && data.name.trim().length > 0) {
+          const oldName = user.name;
           const newName = data.name.trim().substring(0, 50); // Limit to 50 characters
           user.name = newName;
           this.users.set(userId, user);
@@ -226,6 +250,12 @@ export class WhiteboardDurableObject {
           this.broadcast({
             type: MESSAGE_TYPES.USER_NAME_CHANGED,
             data: { userId, name: newName }
+          });
+
+          // Log audit event
+          this.logAuditEvent(userId, 'change_name', {
+            oldName,
+            newName
           });
         }
         break;
@@ -252,6 +282,38 @@ export class WhiteboardDurableObject {
         }
       }
     }
+  }
+
+  /**
+   * Log an audit event
+   * @param {string} userId - User ID who performed the action
+   * @param {string} action - Action type (draw, delete, add_text, etc.)
+   * @param {Object} details - Additional details about the action
+   */
+  logAuditEvent(userId, action, details = {}) {
+    const user = this.users.get(userId);
+    const event = {
+      id: crypto.randomUUID(),
+      timestamp: Date.now(),
+      userId,
+      userName: user?.name || 'Unknown User',
+      userColor: user?.color || '#888888',
+      action,
+      details
+    };
+
+    this.auditLog.push(event);
+
+    // Trim audit log if it exceeds max size
+    if (this.auditLog.length > this.maxAuditLogSize) {
+      this.auditLog = this.auditLog.slice(-this.maxAuditLogSize);
+    }
+
+    // Broadcast audit event to all clients
+    this.broadcast({
+      type: 'AUDIT_EVENT',
+      data: event
+    });
   }
 
   /**
@@ -291,6 +353,7 @@ export class WhiteboardDurableObject {
 
     try {
       await this.state.storage.put('canvasState', this.canvasState);
+      await this.state.storage.put('auditLog', this.auditLog);
       console.log(`Canvas state saved (${changesToSave} changes batched)`);
     } catch (error) {
       console.error('Error saving canvas state:', error);
@@ -325,6 +388,7 @@ export class WhiteboardDurableObject {
   async saveState() {
     try {
       await this.state.storage.put('canvasState', this.canvasState);
+      await this.state.storage.put('auditLog', this.auditLog);
       this.unsavedChanges = 0;
       console.log('Canvas state saved successfully');
     } catch (error) {
@@ -356,6 +420,35 @@ export class WhiteboardDurableObject {
       });
     } catch (error) {
       return new Response(JSON.stringify({ success: false, error: error.message }), {
+        status: 500,
+        headers: { 'Content-Type': 'application/json' }
+      });
+    }
+  }
+
+  /**
+   * Handle HTTP request for getting audit log
+   */
+  async handleGetAuditLog(request) {
+    try {
+      const url = new URL(request.url);
+      const limit = parseInt(url.searchParams.get('limit')) || 100;
+      const offset = parseInt(url.searchParams.get('offset')) || 0;
+
+      // Return requested slice of audit log (most recent first)
+      const reversedLog = [...this.auditLog].reverse();
+      const paginatedLog = reversedLog.slice(offset, offset + limit);
+
+      return new Response(JSON.stringify({
+        events: paginatedLog,
+        total: this.auditLog.length,
+        limit,
+        offset
+      }), {
+        headers: { 'Content-Type': 'application/json' }
+      });
+    } catch (error) {
+      return new Response(JSON.stringify({ error: error.message }), {
         status: 500,
         headers: { 'Content-Type': 'application/json' }
       });

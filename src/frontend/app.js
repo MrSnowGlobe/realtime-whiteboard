@@ -55,6 +55,9 @@ class WhiteboardApp {
             // Connect to WebSocket
             await this.connectWebSocket();
 
+            // Fetch audit log
+            await this.fetchAuditLog();
+
             // Hide loading overlay
             document.getElementById('loading-overlay').style.display = 'none';
 
@@ -685,6 +688,11 @@ class WhiteboardApp {
                 this.updateCursorLabel(data.userId, data.name);
                 break;
 
+            case 'AUDIT_EVENT':
+                // Handle real-time audit event
+                this.addAuditEvent(data);
+                break;
+
             case MESSAGE_TYPES.ERROR:
                 console.error('Server error:', data.message);
                 break;
@@ -1003,6 +1011,128 @@ class WhiteboardApp {
         const isNightMode = localStorage.getItem('nightMode') === 'true';
         if (isNightMode) {
             document.body.classList.add('night-mode');
+        }
+    }
+
+    /**
+     * Fetch and display audit log
+     */
+    async fetchAuditLog() {
+        try {
+            const response = await fetch(`/api/session/${this.sessionId}/audit-log?limit=20`);
+            const data = await response.json();
+
+            if (data.events) {
+                const auditList = document.getElementById('audit-log-list');
+                auditList.innerHTML = '';
+
+                data.events.forEach(event => {
+                    this.addAuditEvent(event);
+                });
+            }
+        } catch (error) {
+            console.error('Error fetching audit log:', error);
+        }
+    }
+
+    /**
+     * Add audit event to the UI
+     */
+    addAuditEvent(event) {
+        const auditList = document.getElementById('audit-log-list');
+
+        // Create audit item
+        const item = document.createElement('div');
+        item.className = 'audit-item';
+
+        const header = document.createElement('div');
+        header.className = 'audit-item-header';
+
+        const colorDot = document.createElement('div');
+        colorDot.className = 'audit-user-color';
+        colorDot.style.backgroundColor = event.userColor;
+
+        const userName = document.createElement('span');
+        userName.className = 'audit-user-name';
+        userName.textContent = event.userName;
+
+        const action = document.createElement('span');
+        action.className = 'audit-action';
+        action.textContent = this.formatAction(event.action);
+
+        const time = document.createElement('span');
+        time.className = 'audit-time';
+        time.textContent = this.formatTime(event.timestamp);
+
+        header.appendChild(colorDot);
+        header.appendChild(userName);
+        header.appendChild(action);
+        header.appendChild(time);
+
+        item.appendChild(header);
+
+        // Add details if available
+        const details = this.formatDetails(event.action, event.details);
+        if (details) {
+            const detailsDiv = document.createElement('div');
+            detailsDiv.className = 'audit-details';
+            detailsDiv.textContent = details;
+            item.appendChild(detailsDiv);
+        }
+
+        // Add to top of list
+        auditList.insertBefore(item, auditList.firstChild);
+
+        // Keep only last 20 items
+        while (auditList.children.length > 20) {
+            auditList.removeChild(auditList.lastChild);
+        }
+    }
+
+    /**
+     * Format action type for display
+     */
+    formatAction(action) {
+        const actions = {
+            'create': 'created an element',
+            'update': 'updated an element',
+            'delete': 'deleted an element',
+            'change_name': 'changed their name'
+        };
+        return actions[action] || action;
+    }
+
+    /**
+     * Format details for display
+     */
+    formatDetails(action, details) {
+        if (action === 'change_name' && details.oldName && details.newName) {
+            return `${details.oldName} → ${details.newName}`;
+        }
+        if (details.elementType) {
+            return `Type: ${details.elementType}`;
+        }
+        return null;
+    }
+
+    /**
+     * Format timestamp for display
+     */
+    formatTime(timestamp) {
+        const now = Date.now();
+        const diff = now - timestamp;
+
+        if (diff < 60000) {
+            return 'just now';
+        } else if (diff < 3600000) {
+            const minutes = Math.floor(diff / 60000);
+            return `${minutes}m ago`;
+        } else if (diff < 86400000) {
+            const hours = Math.floor(diff / 3600000);
+            return `${hours}h ago`;
+        } else {
+            const days = Math.floor(diff / 86400000);
+            return `${days}d ago`;
         }
     }
 }

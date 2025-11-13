@@ -313,6 +313,61 @@ label {
     font-style: italic;
 }
 
+/* Audit Log Panel */
+.audit-panel {
+    top: 500px;
+    max-height: 300px;
+}
+
+.audit-log-list {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.audit-item {
+    padding: 8px;
+    background: #f9f9f9;
+    border-left: 3px solid #4a90e2;
+    border-radius: 4px;
+    font-size: 12px;
+}
+
+.audit-item-header {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    margin-bottom: 4px;
+}
+
+.audit-user-color {
+    width: 10px;
+    height: 10px;
+    border-radius: 50%;
+}
+
+.audit-user-name {
+    font-weight: 600;
+    color: #333;
+}
+
+.audit-action {
+    color: #666;
+    font-size: 11px;
+}
+
+.audit-time {
+    color: #999;
+    font-size: 10px;
+    margin-left: auto;
+}
+
+.audit-details {
+    color: #666;
+    font-size: 11px;
+    margin-top: 2px;
+}
+
 /* Loading Overlay */
 .loading-overlay {
     position: fixed;
@@ -593,4 +648,25 @@ body.night-mode #color-picker {
 
 body.night-mode .color-swatch {
     border-color: #505050;
+}
+
+body.night-mode .audit-item {
+    background: #3a3a3a;
+    border-left-color: #4a90e2;
+}
+
+body.night-mode .audit-user-name {
+    color: #e0e0e0;
+}
+
+body.night-mode .audit-action {
+    color: #b0b0b0;
+}
+
+body.night-mode .audit-time {
+    color: #888;
+}
+
+body.night-mode .audit-details {
+    color: #b0b0b0;
 }
